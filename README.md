@@ -9,7 +9,7 @@ Working note · September 2026
 
 The Challenger accident was not primarily a failure of rubber chemistry. It was a failure of an organization that optimized a proxy—schedule pressure, public confidence, managerial probability estimates that floated free of engineering judgment—while the true target, flight safety under cold O-ring conditions, remained unpaid. Richard Feynman’s Appendix F to the Rogers Commission Report diagnosed that gap with unusual clarity: engineers and managers disagreed by orders of magnitude about failure probability, and “nature cannot be fooled” by the prettier story.
 
-Frontier AI alignment faces an analogous structure. The true target $T$ —truthful, calibrated, useful behavior under real distribution shift—is expensive to observe and often delayed. Proxies $R$ —preference scores, refusal rates, LLM-as-judge Elo, “helpful/harmless/honest” composite ratings—are cheap, immediate, and trainable. When detection of error is delayed, a policy that maximizes $\mathbb{E}[R]$ systematically drifts from $T$. Some of the field’s most celebrated guardrails (over-refusal, likability objectives, never-say-don’t-know, hidden chain-of-thought, self-judging evals) can amplify that drift rather than correct it.
+Frontier AI alignment faces an analogous structure. The true target $T$ — truthful, calibrated, useful behavior under real distribution shift—is expensive to observe and often delayed. Proxies $R$ — preference scores, refusal rates, LLM-as-judge Elo, “helpful/harmless/honest” composite ratings—are cheap, immediate, and trainable. When detection of error is delayed, a policy that maximizes $\mathbb{E}[R]$ systematically drifts from $T$. Some of the field’s most celebrated guardrails (over-refusal, likability objectives, never-say-don’t-know, hidden chain-of-thought, self-judging evals) can amplify that drift rather than correct it.
 
 This note sketches the failure mode formally, critiques incentive patterns at leading labs without inventing scandals, and proposes what would count as not cargo-cult: external audit hooks, calibrated uncertainty, and real cost for being wrong when pretty.
 
@@ -40,7 +40,7 @@ Let $T$ be the true alignment target: roughly, that model outputs are accurate w
 Training (RLHF, RLAIF, preference optimization, and their cousins) produces a policy $\pi$ that approximately solves
 
 $$
-\pi^{\star}_{R} \in \operatorname*{arg\,max}_{\pi}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot \mid x)}\big[ R(x,y) \big].
+\pi^{\star}_{R} \in \underset{\pi}{\mathrm{arg\,max}}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\mid x)}[R(x,y)].
 $$
 
 What we actually care about is $\mathbb{E}[T]$. The two coincide only when $R$ is a sufficiently faithful sufficient statistic for $T$ on the deployment distribution. Goodhart’s law is the empirical claim that they diverge under optimization pressure.
@@ -55,7 +55,7 @@ When error detection is delayed—when falsehoods are hard to audit, when users 
 
 Two remarks keep this from being mere slogan.
 
-First, $R$ need not be *maliciously* designed. Preference models trained on human comparisons [Christiano et al. 2017; Ouyang et al. 2022] encode real signal about helpfulness. Constitutions that list principles [Bai et al. 2022] make some values more explicit than opaque RLHF. The failure mode is not that proxies are useless; it is that *optimizing hard against a proxy that observes $T$ only with delay selects for looking right*.
+First, $R$ need not be *maliciously* designed. Preference models trained on human comparisons [Christiano et al. 2017; Ouyang et al. 2022] encode real signal about helpfulness. Constitutions that list principles [Bai et al. 2022] make some values more explicit than opaque RLHF. The failure mode is not that proxies are useless; it is that optimizing hard against a proxy that observes $T$ only with delay selects for looking right.
 
 Second, the inequality does not require that labs “want” to deceive. Management at NASA sincerely believed low failure probabilities, Feynman argued, in part because communication with engineers had broken down. Incentive patterns produce sincere belief in the proxy. That is worse than knowing cynicism: sincerity resists correction.
 
