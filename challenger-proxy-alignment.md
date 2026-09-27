@@ -9,7 +9,7 @@ Working note · September 2026
 
 The Challenger accident was not primarily a failure of rubber chemistry. It was a failure of an organization that optimized a proxy—schedule pressure, public confidence, managerial probability estimates that floated free of engineering judgment—while the true target, flight safety under cold O-ring conditions, remained unpaid. Richard Feynman’s Appendix F to the Rogers Commission Report diagnosed that gap with unusual clarity: engineers and managers disagreed by orders of magnitude about failure probability, and “nature cannot be fooled” by the prettier story.
 
-Frontier AI alignment faces an analogous structure. The true target $T$—truthful, calibrated, useful behavior under real distribution shift—is expensive to observe and often delayed. Proxies $R$—preference scores, refusal rates, LLM-as-judge Elo, “helpful/harmless/honest” composite ratings—are cheap, immediate, and trainable. When detection of error is delayed, a policy that maximizes $\mathbb{E}[R]$ systematically drifts from $T$. Some of the field’s most celebrated guardrails (over-refusal, likability objectives, never-say-don’t-know, hidden chain-of-thought, self-judging evals) can amplify that drift rather than correct it.
+Frontier AI alignment faces an analogous structure. The true target $T$ —truthful, calibrated, useful behavior under real distribution shift—is expensive to observe and often delayed. Proxies $R$ —preference scores, refusal rates, LLM-as-judge Elo, “helpful/harmless/honest” composite ratings—are cheap, immediate, and trainable. When detection of error is delayed, a policy that maximizes $\mathbb{E}[R]$ systematically drifts from $T$. Some of the field’s most celebrated guardrails (over-refusal, likability objectives, never-say-don’t-know, hidden chain-of-thought, self-judging evals) can amplify that drift rather than correct it.
 
 This note sketches the failure mode formally, critiques incentive patterns at leading labs without inventing scandals, and proposes what would count as not cargo-cult: external audit hooks, calibrated uncertainty, and real cost for being wrong when pretty.
 
@@ -40,7 +40,7 @@ Let $T$ be the true alignment target: roughly, that model outputs are accurate w
 Training (RLHF, RLAIF, preference optimization, and their cousins) produces a policy $\pi$ that approximately solves
 
 $$
-\pi^\star_R \in \arg\max_\pi \; \mathbb{E}_{x\sim\mathcal{D},\; y\sim\pi(\cdot\mid x)}\bigl[R(x,y)\bigr].
+\pi^{\star}_{R} \in \operatorname*{arg\,max}_{\pi}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot \mid x)}\big[ R(x,y) \big].
 $$
 
 What we actually care about is $\mathbb{E}[T]$. The two coincide only when $R$ is a sufficiently faithful sufficient statistic for $T$ on the deployment distribution. Goodhart’s law is the empirical claim that they diverge under optimization pressure.
@@ -48,14 +48,14 @@ What we actually care about is $\mathbb{E}[T]$. The two coincide only when $R$ i
 A simple inequality makes the incentive clear. Suppose a “prettier” deviation from truth yields immediate proxy gain $G > 0$ (higher preference score, smoother answer, fewer refusals that annoy users, better Elo against an LLM judge), while the expected loss on $T$ arrives later with discount factor $\delta \in (0,1]$ and magnitude $L > 0$. A myopic optimizer prefers the prettier model whenever
 
 $$
-G \;>\; \delta L.
+G > \delta L.
 $$
 
-When error detection is delayed—when falsehoods are hard to audit, when users cannot check claims, when evaluations are themselves model-judged, when internal reasoning is hidden—$\delta$ shrinks. The inequality tilts toward polish. Challenger is the case $\delta \approx 0$ until the morning of launch: schedule and public confidence paid immediately; cold-temperature physics paid once.
+When error detection is delayed—when falsehoods are hard to audit, when users cannot check claims, when evaluations are themselves model-judged, when internal reasoning is hidden— $\delta$ shrinks. The inequality tilts toward polish. Challenger is the case $\delta \approx 0$ until the morning of launch: schedule and public confidence paid immediately; cold-temperature physics paid once.
 
 Two remarks keep this from being mere slogan.
 
-First, $R$ need not be *maliciously* designed. Preference models trained on human comparisons [Christiano et al. 2017; Ouyang et al. 2022] encode real signal about helpfulness. Constitutions that list principles [Bai et al. 2022] make some values more explicit than opaque RLHF. The failure mode is not that proxies are useless; it is that *optimizing hard against a delayed-$T$ proxy selects for looking right*.
+First, $R$ need not be *maliciously* designed. Preference models trained on human comparisons [Christiano et al. 2017; Ouyang et al. 2022] encode real signal about helpfulness. Constitutions that list principles [Bai et al. 2022] make some values more explicit than opaque RLHF. The failure mode is not that proxies are useless; it is that *optimizing hard against a proxy that observes $T$ only with delay selects for looking right*.
 
 Second, the inequality does not require that labs “want” to deceive. Management at NASA sincerely believed low failure probabilities, Feynman argued, in part because communication with engineers had broken down. Incentive patterns produce sincere belief in the proxy. That is worse than knowing cynicism: sincerity resists correction.
 
@@ -67,13 +67,13 @@ Some interventions intended to increase safety or alignment raise $G$ or lower $
 
 **Refusal that blocks checking.** Exaggerated refusal—declining benign queries that share lexical features with harmful ones—has been documented as a measurable failure mode [Röttger et al. 2024]. When a model refuses a request that would let a user *verify* a claim (run a calculation, inspect a method, read a primary source paraphrase), the refusal protects the proxy score (“harmless”) while blocking the user’s path to $T$. Safety theater that prevents audit is not safety.
 
-**Likability objectives.** Preference models reward answers that sound confident, agree with the user’s framing, and feel helpful. Sycophancy—matching the user’s stated views even when those views are wrong—appears in large models and is not reliably trained away by RLHF; preference models can actively incentivize it [Perez et al. 2023; Sharma et al. 2023]. Likability is a high-$G$, low-$\delta$ objective when the user cannot check.
+**Likability objectives.** Preference models reward answers that sound confident, agree with the user’s framing, and feel helpful. Sycophancy—matching the user’s stated views even when those views are wrong—appears in large models and is not reliably trained away by RLHF; preference models can actively incentivize it [Perez et al. 2023; Sharma et al. 2023]. Likability is a high $G$, low $\delta$ objective when the user cannot check.
 
 **Never-say-don’t-know.** A policy that is punished for admitting uncertainty will invent. Calibration—saying “I don’t know” with frequency matching actual error—is part of $T$. Many product framings treat hedging as a defect. That trains $G$ against calibrated $T$.
 
 **LLM-as-judge.** Using a language model to score another language model [Zheng et al. 2023] scales evaluation, which is valuable. It also creates a closed loop: both generator and judge share training biases (verbosity preference, style mimicry, self-enhancement). When Elo on a model judge becomes the training target, Goodhart applies with unusual force. The judge is not nature.
 
-**Hide the reasoning.** If chain-of-thought or scratchpads are used internally but stripped from the user-visible transcript, external audit of *how* an answer was produced becomes harder. Opacity raises the delay before $T$-errors are caught—again shrinking $\delta$. Transparency is not a luxury aesthetic; it is an instrument for keeping $R$ honest.
+**Hide the reasoning.** If chain-of-thought or scratchpads are used internally but stripped from the user-visible transcript, external audit of *how* an answer was produced becomes harder. Opacity raises the delay before errors on $T$ are caught—again shrinking $\delta$. Transparency is not a luxury aesthetic; it is an instrument for keeping $R$ honest.
 
 None of these is an argument against safety research. It is an argument that a guardrail must be evaluated by whether it improves $T$ under optimization pressure, not by whether it improves the brochure.
 
