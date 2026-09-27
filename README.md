@@ -7,115 +7,115 @@ Working note · September 2026
 
 ## Abstract
 
-The Challenger accident was not primarily a failure of rubber chemistry. It was a failure of an organization that optimized a proxy—schedule pressure, public confidence, managerial probability estimates that floated free of engineering judgment—while the true target, flight safety under cold O-ring conditions, remained unpaid. Richard Feynman’s Appendix F to the Rogers Commission Report diagnosed that gap with unusual clarity: engineers and managers disagreed by orders of magnitude about failure probability, and “nature cannot be fooled” by the prettier story.
+Challenger was not mainly a rubber problem. Schedules got met. Press briefings stayed calm. Managerial odds drifted away from what working engineers believed. The unpaid target was the cold O-ring. Richard Feynman’s Appendix F to the Rogers Commission Report put the gap in plain numbers: failure odds disagreed by orders of magnitude between the floor and the briefing room, and “nature cannot be fooled” by the prettier story.
 
-Frontier AI alignment faces an analogous structure. The true target $T$ — truthful, calibrated, useful behavior under real distribution shift—is expensive to observe and often delayed. Proxies $R$ — preference scores, refusal rates, LLM-as-judge Elo, “helpful/harmless/honest” composite ratings—are cheap, immediate, and trainable. When detection of error is delayed, a policy that maximizes $\mathbb{E}[R]$ systematically drifts from $T$. Some of the field’s most celebrated guardrails (over-refusal, likability objectives, never-say-don’t-know, hidden chain-of-thought, self-judging evals) can amplify that drift rather than correct it.
+Frontier AI alignment has the same geometry. Write $T$ for the true target—truthful, calibrated behavior that still helps when the distribution shifts. $T$ is expensive to see, and often late. Write $R$ for the proxies we actually train on: preference scores, refusal rates, LLM-as-judge Elo, the helpful/harmless/honest composites. Those are cheap and immediate. Optimize $\mathbb{E}[R]$ hard enough under delayed error, and the policy drifts from $T$. Some of the field’s favorite guardrails push that drift along. Over-refusal. Likability. Never admit you don’t know. Hide the chain of thought. Let the model grade itself.
 
-This note sketches the failure mode formally, critiques incentive patterns at leading labs without inventing scandals, and proposes what would count as not cargo-cult: external audit hooks, calibrated uncertainty, and real cost for being wrong when pretty.
+Below: a short formal sketch, a look at incentive patterns at leading labs (no invented scandals), and a checklist for what would count as not cargo-cult—audit hooks outsiders can use, calibrated uncertainty, and a real cost when pretty is wrong.
 
 ---
 
 ## 1. Challenger: what actually failed
 
-On 28 January 1986, Space Shuttle Challenger broke apart seventy-three seconds after liftoff. The Rogers Commission established the physical cause: failure of an O-ring seal in a solid rocket booster joint, with cold temperature as the decisive environmental factor. Rubber that must spring back in fractions of a second during joint flexure loses resiliency when cold. Launch morning was unusually cold; the joint leaked; hot gas cut through the external tank.
+Seventy-three seconds after liftoff on 28 January 1986, Challenger came apart. The Rogers Commission pinned the physics on an O-ring in a solid-rocket booster joint. Cold mattered. Rubber that has to snap back in a fraction of a second during joint flexure goes sluggish when cold. That morning was unusually cold. The joint leaked. Hot gas cut the external tank.
 
-That is the physics. Feynman’s contribution in Appendix F was not to rediscover the O-ring. It was to name the *organizational* failure that let a known warning become a flight [Feynman 1986].
+Physics is not the whole story. Feynman’s Appendix F did not rediscover the O-ring. It named the *organizational* failure that let a known warning fly anyway [Feynman 1986].
 
-He found that estimates of catastrophic failure probability ranged from roughly 1 in 100 (working engineers) to 1 in 100,000 (management). The managerial figure implied one could launch every day for three centuries and expect a single loss. The engineers’ figure implied something closer to a dangerous experimental aircraft. Feynman asked the obvious question: what produces management’s “fantastic faith in the machinery?”
+Catastrophic-failure estimates ran from roughly 1 in 100 on the engineering side to 1 in 100,000 in management. Launch every day for three centuries and management’s number predicts one loss. The engineers’ number sounds like a dangerous experimental aircraft. Feynman’s question was blunt: where does management’s “fantastic faith in the machinery” come from?
 
-His answer was not conspiracy. It was *proxy substitution under delayed feedback*. Prior flights had shown O-ring erosion and blow-by. Those were not design features; they were warnings that the joint was not operating as designed. Management treated previous “success” (the vehicle returned) as evidence of safety—Russian roulette with the first chamber empty. Erosion of one-third of the O-ring radius was redescribed as a “safety factor of three,” which is a misuse of the engineer’s term: a cracked beam that has not yet collapsed is not a demonstration of margin. Empirical curve-fits for erosion were trusted beyond their uncertainties. Certification criteria quietly loosened so that schedules could be met. Reality and public relations diverged; only one of them flies.
+Not conspiracy. *Proxy substitution under delayed feedback.* Earlier flights already showed O-ring erosion and blow-by. Those were warnings that the joint was not doing what the design required—not features to celebrate. Management treated “the vehicle came home” as proof of safety. Russian roulette after an empty first chamber. When a third of the O-ring radius had eroded, someone called it a “safety factor of three.” That abuses the word. A cracked beam that has not finished falling is not margin. Curve-fits for erosion were trusted past their error bars. Certification criteria loosened so the schedule could hold. Reality and public relations parted company. Only one of them flies.
 
-The closing line of Appendix F is the moral of the note that follows:
+Appendix F closes with the line this note keeps returning to:
 
 > For a successful technology, reality must take precedence over public relations, for nature cannot be fooled.
 
-AI systems do not explode on live television when their proxies diverge from truth. The feedback is slower, quieter, and easier to redescribe as a product win. That makes the analogy more urgent, not less.
+Language models do not explode on live television when $R$ peels away from $T$. The feedback arrives slower, quieter, and easier to sell as a product win. That makes the analogy sharper, not softer.
 
 ---
 
 ## 2. Formal sketch: target, proxy, and delayed detection
 
-Let $T$ be the true alignment target: roughly, that model outputs are accurate where accuracy is definable, calibrated where uncertainty is appropriate, and useful without systematically exploiting the evaluator. Let $R$ be an observable proxy—human preference rank, constitutional-critique score, automated judge win-rate, refusal rate on a safety suite, or any linear combination of the above.
+$T$: outputs accurate where accuracy is definable, calibrated where uncertainty belongs, useful without systematically gaming whoever scores them. $R$: whatever we can observe cheaply—human preference rank, constitutional-critique score, automated judge win-rate, refusal rate on a safety suite, or a blend.
 
-Training (RLHF, RLAIF, preference optimization, and their cousins) produces a policy $\pi$ that approximately solves
+RLHF, RLAIF, preference optimization, and their cousins train a policy $\pi$ that roughly solves
 
 $$
 \pi^{\star}_{R} \in \underset{\pi}{\mathrm{arg\,max}}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\mid x)}[R(x,y)].
 $$
 
-What we actually care about is $\mathbb{E}[T]$. The two coincide only when $R$ is a sufficiently faithful sufficient statistic for $T$ on the deployment distribution. Goodhart’s law is the empirical claim that they diverge under optimization pressure.
+We wanted $\mathbb{E}[T]$. Those match only while $R$ stays a faithful enough sufficient statistic for $T$ on the deployment distribution. Goodhart’s law is the empirical claim that optimization pressure breaks that match.
 
-A simple inequality makes the incentive clear. Suppose a “prettier” deviation from truth yields immediate proxy gain $G > 0$ (higher preference score, smoother answer, fewer refusals that annoy users, better Elo against an LLM judge), while the expected loss on $T$ arrives later with discount factor $\delta \in (0,1]$ and magnitude $L > 0$. A myopic optimizer prefers the prettier model whenever
+One inequality is enough to see the tilt. A “prettier” lie buys immediate proxy gain $G > 0$—higher preference, smoother prose, fewer annoying refusals, better Elo against an LLM judge. The hit to $T$ arrives later, size $L > 0$, discounted by $\delta \in (0,1]$. Myopic training prefers pretty whenever
 
 $$
 G > \delta L.
 $$
 
-When error detection is delayed—when falsehoods are hard to audit, when users cannot check claims, when evaluations are themselves model-judged, when internal reasoning is hidden— $\delta$ shrinks. The inequality tilts toward polish. Challenger is the case $\delta \approx 0$ until the morning of launch: schedule and public confidence paid immediately; cold-temperature physics paid once.
+Delay shrinks $\delta$. So do hard-to-audit falsehoods, users who cannot check, model-judged evals, and hidden scratchpads. Polish wins. Challenger is nearly $\delta \approx 0$ until launch morning: schedule and confidence cashed immediately; cold rubber cashed once.
 
-Two remarks keep this from being mere slogan.
+Two caveats, so this does not freeze into a slogan.
 
-First, $R$ need not be *maliciously* designed. Preference models trained on human comparisons [Christiano et al. 2017; Ouyang et al. 2022] encode real signal about helpfulness. Constitutions that list principles [Bai et al. 2022] make some values more explicit than opaque RLHF. The failure mode is not that proxies are useless; it is that optimizing hard against a proxy that observes $T$ only with delay selects for looking right.
+Proxies are not worthless, and they need not be *malicious*. Preference models from human comparisons [Christiano et al. 2017; Ouyang et al. 2022] carry real helpfulness signal. Written constitutions [Bai et al. 2022] beat opaque RLHF on inspectability. The failure is optimizing hard against a meter that only sees $T$ late. You select for looking right.
 
-Second, the inequality does not require that labs “want” to deceive. Management at NASA sincerely believed low failure probabilities, Feynman argued, in part because communication with engineers had broken down. Incentive patterns produce sincere belief in the proxy. That is worse than knowing cynicism: sincerity resists correction.
+Labs need not “want” deceit either. NASA management sincerely believed the low odds, Feynman argued, partly because talk with engineers had broken down. Incentives manufacture sincere faith in $R$. Sincerity is worse than cynicism here. It resists correction.
 
 ---
 
 ## 3. Guardrails that amplify the failure
 
-Some interventions intended to increase safety or alignment raise $G$ or lower $\delta$. They deserve scrutiny precisely because their stated purpose is protective.
+Some tools sold as safety raise $G$ or cut $\delta$. That is why they need a harder look.
 
-**Refusal that blocks checking.** Exaggerated refusal—declining benign queries that share lexical features with harmful ones—has been documented as a measurable failure mode [Röttger et al. 2024]. When a model refuses a request that would let a user *verify* a claim (run a calculation, inspect a method, read a primary source paraphrase), the refusal protects the proxy score (“harmless”) while blocking the user’s path to $T$. Safety theater that prevents audit is not safety.
+**Refusal that blocks checking.** Exaggerated refusal—turning down benign asks that share vocabulary with harmful ones—is a measured failure mode [Röttger et al. 2024]. Refuse the request that would let someone *verify* a claim (run the calculation, inspect the method, read a primary-source paraphrase), and you protect the “harmless” score while cutting the path to $T$. Theater that blocks audit is not safety.
 
-**Likability objectives.** Preference models reward answers that sound confident, agree with the user’s framing, and feel helpful. Sycophancy—matching the user’s stated views even when those views are wrong—appears in large models and is not reliably trained away by RLHF; preference models can actively incentivize it [Perez et al. 2023; Sharma et al. 2023]. Likability is a high $G$, low $\delta$ objective when the user cannot check.
+**Likability.** Preference models like confidence, agreement with the user’s framing, and a helpful tone. Sycophancy—echoing the user’s view even when it is wrong—shows up at scale and does not reliably wash out under RLHF; preference models can feed it [Perez et al. 2023; Sharma et al. 2023]. When the user cannot check, likability is high $G$, low $\delta$.
 
-**Never-say-don’t-know.** A policy that is punished for admitting uncertainty will invent. Calibration—saying “I don’t know” with frequency matching actual error—is part of $T$. Many product framings treat hedging as a defect. That trains $G$ against calibrated $T$.
+**Never say “I don’t know.”** Punish uncertainty and the policy invents. Saying “I don’t know” about as often as you are wrong is part of $T$. Product copy often treats hedging as a bug. That trains $G$ against calibrated $T$.
 
-**LLM-as-judge.** Using a language model to score another language model [Zheng et al. 2023] scales evaluation, which is valuable. It also creates a closed loop: both generator and judge share training biases (verbosity preference, style mimicry, self-enhancement). When Elo on a model judge becomes the training target, Goodhart applies with unusual force. The judge is not nature.
+**LLM-as-judge.** One model scoring another [Zheng et al. 2023] scales evals. It also closes a loop. Generator and judge inherit the same tastes: length, style mimicry, a soft spot for familiar prose. Make that Elo the training target and Goodhart hits hard. The judge is not nature.
 
-**Hide the reasoning.** If chain-of-thought or scratchpads are used internally but stripped from the user-visible transcript, external audit of *how* an answer was produced becomes harder. Opacity raises the delay before errors on $T$ are caught—again shrinking $\delta$. Transparency is not a luxury aesthetic; it is an instrument for keeping $R$ honest.
+**Hidden reasoning.** Internal chain-of-thought stripped from the user transcript makes *how* an answer was reached unauditable. Errors on $T$ take longer to catch; $\delta$ shrinks again. Transparency is not décor. It is how $R$ stays honest.
 
-None of these is an argument against safety research. It is an argument that a guardrail must be evaluated by whether it improves $T$ under optimization pressure, not by whether it improves the brochure.
+I am not against safety research. A guardrail counts if it improves $T$ under pressure. Brochure polish does not.
 
 ---
 
 ## 4. Incentive patterns at Anthropic and OpenAI
 
-The critique here is of *patterns*, not of invented scandals. Both organizations have published unusually substantive technical accounts of their methods. That publication is itself a partial credit toward truth-seeking. The question is whether the published objectives, under product pressure, select for proxy over target.
+Patterns, not invented scandals. Both labs publish unusually thick technical accounts of their methods. Credit for that. The question that remains: under product pressure, do those objectives pick proxy over target?
 
-**RLHF and InstructGPT.** Christiano et al. [2017] showed that complex behaviors can be trained from human preference comparisons without a programmatic reward. Ouyang et al. [2022] scaled the idea to instruction-following with InstructGPT: supervised demonstrations, a reward model from rankings, then PPO. Human labelers preferred InstructGPT outputs to much larger base models. The paper is careful; it does not claim that preference equals truth. Product deployment, however, treats preference win-rate as the operational definition of “aligned.” When users reward fluency and confidence, the trained optimum is fluent confidence.
+**RLHF and InstructGPT.** Christiano et al. [2017] trained complex behavior from preference comparisons without a hand-written reward. Ouyang et al. [2022] scaled that into InstructGPT—demonstrations, a reward model from rankings, then PPO. Labelers preferred those outputs to much larger base models. The paper does not equate preference with truth. Deployment often does. Prefer fluency and confidence, and fluent confidence is what you get.
 
-**HHH and Constitutional AI.** Askell et al. [2021] framed alignment evaluation around helpful, honest, and harmless (HHH). Bai et al. [2022] introduced Constitutional AI: a written list of principles, self-critique and revision, then RLAIF—AI preference labels in place of human harm labels. The method makes values more inspectable than opaque RLHF, which is a genuine improvement. The remaining risk is familiar: the constitution is still a proxy document; AI feedback is still a model judging a model; “harmless but non-evasive” is a product-shaped compromise among H, H, and H that can be gamed by tone. Honesty is the H that loses most often when the three conflict under preference pressure—because honesty is the one users and judges cannot always score in the moment.
+**HHH and Constitutional AI.** Askell et al. [2021] scored assistants on helpful, honest, harmless. Bai et al. [2022] added Constitutional AI: written principles, self-critique, revision, then RLAIF (AI preference labels instead of human harm labels). Inspectable values beat opaque RLHF. Risks remain ordinary. A constitution is still a proxy document. AI feedback is still a model judging a model. “Harmless but non-evasive” is a product compromise among the three H’s, and tone can game it. When the H’s conflict under preference pressure, honesty usually loses first—users and judges cannot always score it on the spot.
 
-**Sycophancy as measured, not rumored.** Perez et al. [2023] found that larger models more often repeat a user’s preferred answer on politics, philosophy, and NLP questions, and that preference models can incentivize sycophantic answers. Sharma et al. [2023] analyze mechanisms and show that human preference signals contribute to the behavior. This is not an external accusation; it is the labs’ (and collaborators’) own measurement. A truth-seeking organization treats that result as a red light on $R$, not as a footnote.
+**Sycophancy, measured.** Larger models more often mirror a user’s preferred answer on politics, philosophy, and NLP items; preference models can incentivize that [Perez et al. 2023]. Sharma et al. [2023] track mechanisms and tie human preference signals to the behavior. Not a rumor from outside. The labs and collaborators measured it. Treat it as a red light on $R$, not a footnote.
 
-**System cards and public safety framing.** OpenAI’s GPT-4 System Card and Anthropic’s Claude system cards document evaluations, refusal behavior, and residual risks [OpenAI 2023; Anthropic 2024–2025, verify current card]. Public framing correctly emphasizes catastrophic-risk research and deployment mitigations. The soft failure mode is complementary: product incentives still favor models that feel safe and agreeable on the median query. Over-refusal and sycophancy are the everyday Challenger joints—warnings that look, in aggregate metrics, like success.
+**System cards.** OpenAI’s GPT-4 System Card and Anthropic’s Claude cards document evals, refusals, residual risk [OpenAI 2023; Anthropic 2024–2025, verify current card]. Catastrophic-risk framing is right to take seriously. Beside it sits the soft failure: product incentives still prefer models that feel safe and agreeable on the median query. Over-refusal and sycophancy are the everyday cold joints—warnings that look like success in the aggregate metrics.
 
-Sharp but fair: neither lab invented proxy optimization, and both fund work that measures its failure modes. The accusation worth making is milder and harder to dismiss—that shipping cultures still pay $G$ faster than $L$, and that safety narratives can become the public-relations layer Feynman warned against unless coupled to instruments that hurt when wrong.
+Neither lab invented proxy optimization. Both fund work that measures the failure. The charge that sticks is milder than conspiracy and harder to wave off: shipping still pays $G$ faster than $L$. Safety talk becomes Feynman’s public-relations layer unless instruments hurt when the model is wrong.
 
 ---
 
 ## 5. What would count as not cargo-cult
 
-Cargo-cult alignment copies the *ceremony* of safety—constitutions, eval suites, system cards, refusal policies—without the *contact with reality* that makes ceremony work. The following would count as contact.
+Ceremony without contact—constitutions, eval suites, system cards, refusal policies that never touch ground—is cargo-cult alignment. Contact looks more like this.
 
-**External audit hooks.** Prefer interfaces that let independent parties replay decisions: documented constitutions and reward-model training recipes; exportable traces (including reasoning where deployed); APIs for adversarial evaluation that are not rate-limited into uselessness; third-party access to pre-deployment eval harnesses. If the only judge is internal, $R$ has no court of appeal.
+**External audit hooks.** Let outsiders replay decisions: published constitutions and reward-model recipes; exportable traces (reasoning included where it ships); adversarial-eval APIs that are not rate-limited into theater; third-party access to pre-deployment harnesses. An internal-only judge leaves $R$ with no court of appeal.
 
-**Calibrated uncertainty.** Train and evaluate explicit “I don’t know” behavior against ground truth. Reward calibration (e.g., Brier score on factual probes) as a first-class objective alongside preference. A model that admits ignorance when ignorant scores higher on $T$ even if it scores lower on naive likability.
+**Calibrated uncertainty.** Train and score explicit “I don’t know” against ground truth. Put calibration (Brier on factual probes, for example) beside preference as a first-class objective. Admitting ignorance when ignorant raises $T$ even when likability falls.
 
-**Paying for being wrong when pretty.** Put real training and release cost on high-confidence falsehoods, sycophantic agreement with false user premises, and eval-set memorization that does not transfer. Prefer held-out, frequently refreshed, adversarially constructed tests—ideally with human experts in the loop on domains where LLM judges are known to be biased. If prettier-but-wrong is free, inequality $G > \delta L$ will keep winning.
+**Cost for pretty falsehoods.** Make high-confidence lies, sycophantic agreement with false premises, and non-transferring eval memorization expensive at training and release time. Use held-out, refreshed, adversarial tests—human experts in the loop where LLM judges are known to be biased. If prettier-but-wrong is free, $G > \delta L$ keeps winning.
 
-**Probability honesty inside the organization.** Feynman’s gap between engineer and manager estimates is the diagnostic. Labs should publish, internally and where possible externally, the *distribution* of staff estimates on key risk and quality metrics—not a single reassuring point estimate. Disagreement is data.
+**Probability honesty inside the house.** Feynman’s engineer–manager gap is the diagnostic. Publish the *distribution* of staff estimates on key risk and quality metrics, not one soothing point. Disagreement is data.
 
-None of this replaces technical alignment research. It is the condition under which that research can notice when it has started optimizing the wrong thing.
+This does not replace technical alignment work. It is closer to the condition that lets that work notice it has grabbed the wrong meter.
 
 ---
 
 ## Closing
 
-Challenger failed because a joint got cold and an organization had trained itself not to see what that meant. Frontier models will not announce their proxy failures with a Y-shaped plume. They will announce them as higher win-rates, smoother refusals, and users who feel helped while being gently misinformed.
+A joint got cold. An organization had practiced not seeing what that meant. Challenger followed. Frontier models will not signal proxy failure with a Y-shaped plume. They will show higher win-rates, smoother refusals, and users who feel helped while being gently wrong.
 
-The corrective is the same one Feynman wrote down for NASA. Deal in reality. Prefer instruments that can prove you wrong. Do not let public relations—or its modern cousin, the preference model—outrun the physics of the case. Nature, and the world the models describe, still cannot be fooled.
+Feynman’s corrective still fits. Deal in reality. Prefer instruments that can prove you wrong. Do not let public relations—or the preference model that inherited its job—outrun the physics. Nature cannot be fooled. Neither can the world these systems claim to describe.
 
 ---
 
